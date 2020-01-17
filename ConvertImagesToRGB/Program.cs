@@ -17,8 +17,6 @@ namespace ConvertImagesToRGB
                 bool? integratedSecurity = null;
                 bool hasConnected = false;
                 string dataSource, userId, password, initialCatalog;
-                //table namew
-                //column name
 
                 while (!hasConnected)
                 {
@@ -30,7 +28,7 @@ namespace ConvertImagesToRGB
                     integratedSecurity = null;
                     SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
 
-                    //read from user
+                    //get connection string details
                     Console.WriteLine("Connection String Details: ");
                     Console.WriteLine("==========================");
                     while (integratedSecurity == null)
@@ -74,7 +72,7 @@ namespace ConvertImagesToRGB
                             Console.WriteLine("done.");
 
                             List<Byte[]> images = new List<byte[]>();
-                            List<int> clientIds = new List<int>();
+                            List<int> imageIds = new List<int>();
                             string table = "";
                             string byte_col = "";
                             string id_col = "";
@@ -84,14 +82,14 @@ namespace ConvertImagesToRGB
                             {
                                 Console.Write("Table name      = ");
                                 table = Console.ReadLine();                                
-                                Console.Write("Photo col name  = ");
+                                Console.Write("Image col name  = ");
                                 byte_col = Console.ReadLine();
                                 Console.Write("ID column name  = ");
                                 id_col = Console.ReadLine();
 
-                                //pull client data
+                                //pull image data
                                 String SQL = String.Format("SELECT [{2}], [{3}] FROM [{0}].[dbo].[{1}]", initialCatalog, table, byte_col, id_col);                              
-                                Console.Write("Fetching client data ... ");
+                                Console.Write("Fetching image data ... ");
                                 try
                                 {
                                     using (SqlCommand command = new SqlCommand(SQL, connection))
@@ -106,12 +104,12 @@ namespace ConvertImagesToRGB
                                                     byte[] buffer = null;
                                                     buffer = (byte[])reader[0];
                                                     images.Add(buffer);
-                                                    clientIds.Add(Convert.ToInt32(reader[1]));
+                                                    imageIds.Add(Convert.ToInt32(reader[1]));
                                                 }
                                             }
                                             foundTable = true;
                                             Console.WriteLine("done.");
-                                            Console.WriteLine("Client Count: " + images.Count());
+                                            Console.WriteLine("Image Count: " + images.Count());
                                             Console.WriteLine("=====================================");
                                         }
                                     }
@@ -122,24 +120,25 @@ namespace ConvertImagesToRGB
                                 }
                             }
 
-                            //convert images
+                            //check for empty
                             if (images.Count > 0)
                             {
                                 for (int i = 0; i < images.Count; i++)
                                 {
-                                    byte[] byteArray = images[i];
+                                    byte[] byteArray = images[i];                                   
                                     if (byteArray.Length > 0)
                                     {
                                         using (MagickImage image = new MagickImage(byteArray))
                                         {
+                                            //convert image
                                             if (image.ColorSpace.ToString() == "CMYK")
                                             {
-                                                Console.WriteLine("CMYK Image for client: ID: " + clientIds[i]);
+                                                Console.WriteLine("CMYK Image for imageID: ID: " + imageIds[i]);
                                                 MagickImageInfo info = new MagickImageInfo(byteArray);
 
-                                                //download original image(CMYK)
+                                                //====Download original image(CMYK)====
                                                 Bitmap bmp = image.ToBitmap();
-                                                string fileName = "C:\\Users\\k.comerford\\Desktop\\SavedImages\\original_" + clientIds[i];
+                                                string fileName = "C:\\Users\\k.comerford\\Desktop\\SavedImages\\original_" + imageIds[i];
                                                 if (info.Format == MagickFormat.Jpeg)
                                                 {
                                                     fileName += ".jpeg";
@@ -150,6 +149,7 @@ namespace ConvertImagesToRGB
                                                     fileName += ".png";
                                                     bmp.Save(fileName, ImageFormat.Png);
                                                 }
+                                                //======================================
 
                                                 //strip color profiles + convert to RGB
                                                 image.Strip();
@@ -159,7 +159,7 @@ namespace ConvertImagesToRGB
 
                                                 //add update command to query
                                                 Console.Write("Updating record ... ");
-                                                SqlCommand command = new SqlCommand(String.Format("UPDATE [{0}].[dbo].[{1}] SET [{2}] = 0x{0} where [{3}] = {4};", initialCatalog, table, byte_col, id_col, BitConverter.ToString(byteArray).Replace("-", "").ToLower(), clientIds[i]), connection);
+                                                SqlCommand command = new SqlCommand(String.Format("UPDATE [{0}].[dbo].[{1}] SET [{2}] = 0x{0} where [{3}] = {4};", initialCatalog, table, byte_col, id_col, BitConverter.ToString(byteArray).Replace("-", "").ToLower(), imageIds[i]), connection);
                                                 Console.Write(command.ExecuteNonQuery().ToString() + " rows affected. ... ");
                                                 Console.WriteLine("done.");
                                             }
@@ -167,11 +167,11 @@ namespace ConvertImagesToRGB
                                     }
                                     else
                                     {
-                                        Console.WriteLine("No image for ID: " + clientIds[i]);
+                                        Console.WriteLine("No image for ID: " + imageIds[i]);
                                     }
                                 }
+                                Console.WriteLine("===================");
                                 Console.WriteLine("Checked all images.");
-                                connection.Close();
                             }
                         }
                         catch (Exception ex)
