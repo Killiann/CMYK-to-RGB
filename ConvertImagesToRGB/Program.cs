@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Drawing;
 using System.Drawing.Imaging;
 using ImageMagick;
+using System.IO;
 
 namespace ConvertImagesToRGB              
 {
@@ -67,6 +68,7 @@ namespace ConvertImagesToRGB
                     {
                         try
                         {
+
                             connection.Open();
                             hasConnected = true;
                             Console.WriteLine("done.");
@@ -138,7 +140,8 @@ namespace ConvertImagesToRGB
 
                                                 //====Download original image(CMYK)====
                                                 Bitmap bmp = image.ToBitmap();
-                                                string fileName = "C:\\Users\\k.comerford\\Desktop\\SavedImages\\original_" + imageIds[i];
+                                                Directory.CreateDirectory("CMYKImages");
+                                                string fileName = "CMYKImages\\original_" + imageIds[i];
                                                 if (info.Format == MagickFormat.Jpeg)
                                                 {
                                                     fileName += ".jpeg";
